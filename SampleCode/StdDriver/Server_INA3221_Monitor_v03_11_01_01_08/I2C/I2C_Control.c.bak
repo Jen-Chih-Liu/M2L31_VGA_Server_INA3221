@@ -12,7 +12,7 @@
 #include "I2C_Control.h"
 #include "Monitor_Control.h"
 #include "Flash.h"
-
+#define fw_version 0x08
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -26,12 +26,18 @@ volatile uint8_t u8UpdateFRUDataFlag = 0;
 volatile uint32_t u32UpdateTargetAddress = 0;
 volatile uint8_t u8UpdateTargetOffset = 0;
 volatile uint8_t u8UpdateTargetSize = 0;
+volatile uint8_t u8UpdateISPFlag=0;
 uint8_t u8RxLen = 0;
 
 /* Report Power Information */
 const uint8_t CMD_Get_Power_Info[CMD_LEN_GET_POWER_INFO]
 = {0xDC, 0x03, 0x07, 0x80, 0x00
   };
+
+	const uint8_t CMD_ISP[CMD_LEN_ISP] //jmp to ldrom
+= {0x4E, 0X05, 0x4A, 0x4D, 0x50, 0x4C, 0x44
+  };
+	
 uint8_t Data_Get_Power_Info[DATA_LEN_GET_POWER_INFO]
 = {/* Fixed Header */
    0x0F, 0x07, 0x1F, 0x00,
@@ -100,6 +106,8 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
         {
 						if((u8RxPtr >= 0xF0) && (u8RxPtr <= 0xFF))
 								I2C_SET_DATA(i2c, Data_Get_Power_Info[u8RxPtr++ - 0xF0]);
+						else if(u8RxPtr == 0xc0)
+								I2C_SET_DATA(i2c, fw_version); //fw version
 						else
 								I2C_SET_DATA(i2c, EEPROM_Table[u8RxPtr++]);
         }
@@ -120,11 +128,16 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
         /* Request FRU table */
         if(u8ReportEEPROMFlag == 1)
         {
+					  
             if(u8RxPtr < EEPROM_MAX_VALID_OFFSET)
             {
 								
 								I2C_SET_DATA(i2c, EEPROM_Table[u8RxPtr++]);
             }
+						else if(u8RxPtr==0xc0)
+						{
+						I2C_SET_DATA(i2c, fw_version); //fw version
+						}
 						else if((u8RxPtr >= 0xF0) && (u8RxPtr <= 0xFF))
 						{	
 							I2C_SET_DATA(i2c, Data_Get_Power_Info[u8RxPtr++ - 0xF0]);
@@ -171,6 +184,7 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
     else if(u32Status == 0xA0)                 /* A STOP or repeated START has been received while still
                                                   addressed as Slave/Receiver*/
     {
+			
         /* Request FRU table */
         if((u16SlvDataLen == 1) &&
            (au8SlvRxData[0] < EEPROM_MAX_VALID_OFFSET)
@@ -183,8 +197,18 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
             /* Clear flag */
             u8ReportMonitorFlag = 0;
         }
+				else if((u16SlvDataLen == 1) &&
+           (au8SlvRxData[0] ==0xc0)
+          )
+        {
+			      u8RxPtr = au8SlvRxData[0];
+            /* Set flag */
+            u8ReportEEPROMFlag = 1;
+            /* Clear flag */
+            u8ReportMonitorFlag = 0;
+				}
 			
-				if((u16SlvDataLen == 1) &&
+		else if((u16SlvDataLen == 1) &&
 					(au8SlvRxData[0] >= 0xF0) && (au8SlvRxData[0] <= 0xFF))
           
         {
@@ -195,14 +219,37 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
             /* Clear flag */
             u8ReportMonitorFlag = 0;
         }
-				
-        /* Write Request Power Information Command */
-        else if((u16SlvDataLen == 5) &&
-                (au8SlvRxData[0] == CMD_Get_Power_Info[0])
+				//ISP COMMAND
+				 else if((u16SlvDataLen == CMD_LEN_ISP) &&
+                (au8SlvRxData[0] == CMD_ISP[0])
                )
         {
             /* Check if get correct command */
-            for(i = 0; i < 5; i++)
+            for(i = 0; i < CMD_LEN_ISP; i++)
+            {
+                if(au8SlvRxData[i] != CMD_ISP[i])
+                {
+                    break;
+                }
+            }
+            /* Get correct command */
+            if(i == CMD_LEN_ISP)
+            {
+                /* Set flag */
+                u8UpdateISPFlag = 1;
+            }
+
+            /* Clear flag */
+            u8ReportEEPROMFlag = 0;
+        }
+				
+        /* Write Request Power Information Command */
+        else if((u16SlvDataLen == CMD_LEN_GET_POWER_INFO) &&
+                ((au8SlvRxData[0] == CMD_Get_Power_Info[0]))
+               )
+        {
+            /* Check if get correct command */
+            for(i = 0; i < CMD_LEN_GET_POWER_INFO; i++)
             {
                 if(au8SlvRxData[i] != CMD_Get_Power_Info[i])
                 {
@@ -210,7 +257,7 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
                 }
             }
             /* Get correct command */
-            if(i == 5)
+            if(i == CMD_LEN_GET_POWER_INFO)
             {
                 /* Set pointer */
                 u8RxPtr = 0;
@@ -291,14 +338,15 @@ void I2C1_Init(void)
 
     /* Enable I2C1 module clock */
     CLK_EnableModuleClock(I2C1_MODULE);
-
+   /* Enable GPIO clock */
+    CLK_EnableModuleClock(GPA_MODULE);
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Set PA multi-function pins for I2C1 SDA and SCL */
-    SYS->GPA_MFPL = (SYS->GPA_MFPL & ~(SYS_GPA_MFPL_PA2MFP_Msk | SYS_GPA_MFPL_PA3MFP_Msk)) | \
-                    (SYS_GPA_MFPL_PA2MFP_I2C1_SDA | SYS_GPA_MFPL_PA3MFP_I2C1_SCL);
-
+    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA2MFP_Msk | SYS_GPA_MFP0_PA3MFP_Msk)) | \
+                    (SYS_GPA_MFP0_PA2MFP_I2C1_SDA | SYS_GPA_MFP0_PA3MFP_I2C1_SCL);
+    PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk | GPIO_SMTEN_SMTEN3_Msk;
     /* Open I2C module and set bus clock */
     I2C_Open(I2C1, SPEED_I2C_BUS);
 

@@ -3,7 +3,7 @@
 const uint8_t __attribute__((used, section(".INF_Table_00_Compy_Info")))
 Compy_Info[EEPROM_SIZE_COMPANY_INFO] = 
 {
-0x05, 0x0a, 0x0a, 0x0c, 0X0d,
+0x0, 0x0, 0x0, 0x0, 0X0,
 };
 const uint8_t __attribute__((used, section(".INF_Table_00_Compy_Info_Reserved")))
 Compy_Info_Reserved[FMC_FLASH_PAGE_SIZE - EEPROM_SIZE_COMPANY_INFO] = 

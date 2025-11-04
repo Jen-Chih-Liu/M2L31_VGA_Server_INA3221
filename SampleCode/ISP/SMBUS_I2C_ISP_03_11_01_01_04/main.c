@@ -28,8 +28,8 @@ extern volatile uint8_t i2c_ack_data;
 extern volatile uint8_t u8JMPAPflag;
 extern volatile uint8_t u8PROGAPflag;
 volatile uint32_t StartAddress;
-__ALIGNED(4) uint8_t Write_buff[32];
-__ALIGNED(4) uint8_t Read_buff[32];
+__ALIGNED(4) volatile uint8_t Write_buff[32];
+__ALIGNED(4) volatile uint8_t Read_buff[32];
 /* This is a dummy implementation to replace the same function in clk.c for size limitation. */
 uint32_t CLK_GetPLLClockFreq(void)
 {

@@ -512,7 +512,7 @@ void UI2C1_Init(void)
     /* Set PB multi-function pins for UI2C1 SDA and SCL */
     SYS->GPB_MFP0 = (SYS->GPB_MFP0 & ~(SYS_GPB_MFP0_PB2MFP_Msk | SYS_GPB_MFP0_PB1MFP_Msk)) | \
                     (SYS_GPB_MFP0_PB2MFP_USCI1_DAT0 | SYS_GPB_MFP0_PB1MFP_USCI1_CLK);
-    PB->SMTEN |= GPIO_SMTEN_SMTEN2_Msk | GPIO_SMTEN_SMTEN1_Msk;
+    PB->SMTEN |= GPIO_SMTEN_SMTEN2_Msk | GPIO_SMTEN_SMTEN3_Msk;
     /* Open UI2C1 module and set bus clock */
     UI2C_Open(UI2C1, SPEED_MONIOR_0_BUS);
 

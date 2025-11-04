@@ -17,17 +17,17 @@
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
 volatile uint16_t u16SlvDataLen;
-uint8_t au8SlvRxData[LEN_MAX_I2C_DATA];
+volatile uint8_t au8SlvRxData[LEN_MAX_I2C_DATA];
 volatile uint8_t u8RxPtr = 0;
 volatile uint8_t u8ReportEEPROMFlag = 0;
 volatile uint8_t u8ReportMonitorFlag = 0;
-uint8_t au8UpdateData[LEN_MAX_I2C_DATA];
+volatile uint8_t au8UpdateData[LEN_MAX_I2C_DATA];
 volatile uint8_t u8UpdateFRUDataFlag = 0;
 volatile uint32_t u32UpdateTargetAddress = 0;
 volatile uint8_t u8UpdateTargetOffset = 0;
 volatile uint8_t u8UpdateTargetSize = 0;
 volatile uint8_t u8UpdateISPFlag=0;
-uint8_t u8RxLen = 0;
+volatile uint8_t u8RxLen = 0;
 
 /* Report Power Information */
 const uint8_t CMD_Get_Power_Info[CMD_LEN_GET_POWER_INFO]
@@ -38,7 +38,7 @@ const uint8_t CMD_Get_Power_Info[CMD_LEN_GET_POWER_INFO]
 = {0x4E, 0X05, 0x4A, 0x4D, 0x50, 0x4C, 0x44
   };
 	
-uint8_t Data_Get_Power_Info[DATA_LEN_GET_POWER_INFO]
+volatile uint8_t Data_Get_Power_Info[DATA_LEN_GET_POWER_INFO]
 = {/* Fixed Header */
    0x0F, 0x07, 0x1F, 0x00,
    /* Volatge and Current data, */
@@ -136,7 +136,7 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
             }
 						else if(u8RxPtr==0xc0)
 						{
-						I2C_SET_DATA(i2c, 0x07); //fw version
+						I2C_SET_DATA(i2c, fw_version); //fw version
 						}
 						else if((u8RxPtr >= 0xF0) && (u8RxPtr <= 0xFF))
 						{	

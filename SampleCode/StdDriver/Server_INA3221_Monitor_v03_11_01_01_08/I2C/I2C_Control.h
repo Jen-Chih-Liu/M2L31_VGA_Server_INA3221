@@ -24,14 +24,14 @@ extern volatile uint32_t u32UpdateTargetAddress;
 extern volatile uint8_t u8UpdateTargetOffset;
 extern volatile uint8_t u8UpdateTargetSize;
 extern volatile uint8_t u8UpdateISPFlag;
-extern uint8_t au8UpdateData[LEN_MAX_I2C_DATA];
+extern volatile uint8_t au8UpdateData[LEN_MAX_I2C_DATA];
 
 /* Global Variables for I2C Communication */
 #define CMD_LEN_GET_POWER_INFO     5
 #define CMD_LEN_ISP     7
 #define DATA_LEN_GET_POWER_INFO    16
 #define DATA_OFFSET_GET_POWER_INFO 4
-extern uint8_t Data_Get_Power_Info[DATA_LEN_GET_POWER_INFO];
+extern volatile  uint8_t Data_Get_Power_Info[DATA_LEN_GET_POWER_INFO];
 #define CMD_OFFSET_GET_POWER_INFO  0xDE
 
 /* Update FRU */
