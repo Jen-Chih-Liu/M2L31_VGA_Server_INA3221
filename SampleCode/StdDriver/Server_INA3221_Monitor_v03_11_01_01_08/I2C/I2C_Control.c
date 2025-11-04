@@ -188,6 +188,7 @@ void I2C_SlaveTRx(I2C_T *i2c, uint32_t u32Status)
         /* Request FRU table */
         if((u16SlvDataLen == 1) &&
            (au8SlvRxData[0] < EEPROM_MAX_VALID_OFFSET)
+				   && (u8ReportMonitorFlag!=1)
           )
         {
             /* Set pointer */
